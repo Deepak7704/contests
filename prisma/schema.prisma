@@ -1,0 +1,67 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+enum Role{
+  ADMIN
+  SUPERVISOR
+  AGENT
+  CANDIDATE
+}
+enum Status{
+  OPEN
+  ASSIGNED
+  CLOSED
+}
+enum SenderRole{
+  AGENT
+  CANDIDATE
+}
+model User{
+  id Int @id @default(autoincrement())
+  name String
+  email String @unique
+  password String
+  role Role @default(CANDIDATE)
+  supervisorId Int?
+  supervisor User? @relation("SupervisorAgents", fields: [supervisorId], references: [id]) 
+  agents User[] @relation("SupervisorAgents")
+
+  candidateConversations Conversation[] @relation("CandidateConversations")
+  agentConversation Conversation[] @relation("AgentConversations")
+  supervisorConversation Conversation[] @relation("SupervisorConversations")
+
+}
+model Conversation{
+  id Int @id @default(autoincrement())
+  candidateId Int
+  agentId Int?
+  supervisorId Int
+  status Status
+  createdAt DateTime @default(now())
+
+  candidateUser User @relation("CandidateConversations",fields: [candidateId],references: [id])
+  agentUser User? @relation("AgentConversations", fields: [agentId],references: [id])
+  supervisorUser User @relation("SupervisorConversations",fields: [supervisorId],references: [id])
+  messages Message[]
+
+}
+model Message{
+  id Int @id @default(autoincrement())
+  conversationId Int
+  senderId Int
+  senderRole SenderRole
+  content String
+  createdAt DateTime @default(now())
+  conversation Conversation @relation(fields: [conversationId],references: [id])
+}
